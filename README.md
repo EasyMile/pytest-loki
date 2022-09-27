@@ -5,16 +5,16 @@ to a [Loki instance](https://github.com/grafana/loki).
 
 ## Installation
 
-You will be able to install it with pip:
+There is no pypi repo yet. You can however install it with pip directly from github:
 
 ```bash
-pip install pytest-loki
+pip install git+https://github.com/EasyMile/pytest-loki.git@d70a2a59d71c7ae09f56612b19e4e3363e4060db
 ```
 
-But for now you'll have to install it manually using setup.py.
+You can also install it manually using setup.py.
 
-It'll automatically register as a pytest plugin - no extra steps needed. If no loki url is provided 
-the plugin will not do anything.
+Once installed, it'll automatically register as a pytest plugin - no extra steps needed.
+If no loki url is provided the plugin will not do anything.
 
 ## Usage
 
