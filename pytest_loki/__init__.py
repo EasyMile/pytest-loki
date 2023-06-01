@@ -65,7 +65,7 @@ class LokiReport:
 
     def __init__(self, config):
         self._prefix = config.getoption('loki_metrics_prefix')
-        self._push_success = False
+        self._push_error = None
         self._basic_auth = None
         self._tests_results = {}
         self._tests_results_raw = []
@@ -112,7 +112,7 @@ class LokiReport:
         streams = []
         for test_suite, tests in self._tests_results.items():
             streams.append(self._build_stream(test_suite, tests))
-        self._push_success = self._push_to_loki(streams)
+        self._push_error = self._push_to_loki(streams)
 
     def _build_stream(self, test_suite: str, tests: Dict):
         labels = {
@@ -133,10 +133,10 @@ class LokiReport:
 
     def pytest_terminal_summary(self, terminalreporter):
         # Write to the pytest terminal
-        if self._push_success:
+        if not self._push_error:
             terminalreporter.write_sep('-', f'Successfully sent test results to loki at {self._loki_url}')
         else:
-            terminalreporter.write_sep('-', f'Could not send tests results to loki at {self._loki_url}')
+            terminalreporter.write_sep('-', self._push_error)
         for testreport in self._tests_results_raw:
             terminalreporter.write_sep('-', f'{testreport.__dict__}')
 
@@ -165,7 +165,7 @@ class LokiReport:
             str_values.append(f"{k}={v}")
         return " ".join(str_values)
 
-    def _push_to_loki(self, streams: List[Tuple[Dict, List[str]]]):
+    def _push_to_loki(self, streams: List[Tuple[Dict, List[str]]]) -> str:
         curr_datetime = time.time_ns()
 
         # push msg log into grafana-loki
@@ -178,8 +178,15 @@ class LokiReport:
             }
             payload['streams'].append(stream)
 
-        r = requests.post(self._loki_url, json=payload, auth=self._basic_auth)
-        return r.ok
+        error_msg = None
+        try:
+            r = requests.post(self._loki_url, json=payload, auth=self._basic_auth)
+        except requests.RequestException as e:
+            error_msg = f"Could not send tests results to loki: {e}"
+        else:
+            if not r.ok:
+                error_msg = f"Failed to send tests resulsts to loki: {r.status_code}: {r.content}"
+        return error_msg
 
     def _make_metric_name(self, name):
         unsanitized_name = name
