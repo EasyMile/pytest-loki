@@ -106,7 +106,8 @@ class LokiReport:
 
             if not self._tests_results.get(test_suite):
                 self._tests_results[test_suite] = {}
-            self._tests_results[test_suite][test_name] = (report.outcome, report.duration, f"{report.caplog}")
+            # TODO: Use a proper class instead of a big tuple
+            self._tests_results[test_suite][test_name] = (report.outcome, report.duration, report.stop, f"{report.caplog}")
 
     def pytest_sessionfinish(self, session):
         streams = []
@@ -121,13 +122,14 @@ class LokiReport:
         }
         lines = []
         for test_name, test_result in tests.items():
-            success, duration, caplog = test_result
+            success, duration, ts, caplog = test_result
             test_values = {'test_name': test_name, 'outcome': success, 'duration': duration}
             values = {**self._env_vars_values, **test_values}
             line = self._format_logfmt(values)
             if success == 'failed':
                 line += caplog
-            lines.append(line)
+            ns_ts = int(ts * 1000000000)
+            lines.append([str(ns_ts), line])
 
         return (labels, lines)
 
@@ -166,15 +168,13 @@ class LokiReport:
         return " ".join(str_values)
 
     def _push_to_loki(self, streams: List[Tuple[Dict, List[str]]]) -> str:
-        curr_datetime = time.time_ns()
 
-        # push msg log into grafana-loki
         payload = {'streams': []}
 
         for labels, lines in streams:
             stream = {
                 'stream': labels,
-                'values': [[curr_datetime, line] for line in lines]
+                'values': lines
             }
             payload['streams'].append(stream)
 
