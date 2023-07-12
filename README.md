@@ -22,7 +22,7 @@ When invoking `py.test`, provide the following arguments:
 
 1. `--loki-url`
 
-   URL to the loki instance to send log lines to. Authentication is not supported.
+   URL to the Loki instance to send log lines to. Authentication is supported via `--loki-basic-auth`.
 
 2. `--loki-metrics-prefix`
 
@@ -30,13 +30,29 @@ When invoking `py.test`, provide the following arguments:
 
 3. `--loki-env-label`
 
-   Environment variabels to use as labels. Will be lowercased for readability.
-   Can be rename with ENV_VAR=renamed_key syntax. Can be repeated many times.
+   Environment variables to use as labels. Will be lowercased for readability.
+   Can be renamed with `ENV_VAR=renamed_key` syntax. Can be repeated many times.
 
-3. `--loki-extra-label`
+4. `--loki-extra-label`
 
    This takes values of form `key=value`, and each metric will have these key
    value pairs as labels. Can be repeated many times.
+
+5. `--loki-env-value`
+
+   Environment variables to use as key=value in log lines. Will be lowercased. Key can be renamed with `ENV_VAR=new_key` syntax. Can be repeated many times.
+
+6. `--loki-basic-auth`
+
+   Optional HTTP Basic auth credentials in the format `user:password`.
+
+7. `--loki-retry-attempts`
+
+   Number of retry attempts for pushing to Loki (default: 3).
+
+8. `--loki-retry-interval`
+
+   Interval in seconds between each retry attempt for pushing to Loki (default: 30).
 
 
 ## Inspiration

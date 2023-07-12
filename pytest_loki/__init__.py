@@ -45,6 +45,18 @@ def pytest_addoption(parser):
         '--loki-basic-auth',
         help='Optional HTTP Basic auth credentials in the user:password format'
     )
+    group.addoption(
+        '--loki-retry-attempts',
+        default=3,
+        type=int,
+        help='Number of retry attempts for pushing to Loki (default: 3)'
+    )
+    group.addoption(
+        '--loki-retry-interval',
+        default=30,
+        type=int,
+        help='Interval in seconds between each retry attempt for pushing to Loki (default: 30)'
+    )
 
 
 def pytest_configure(config):
@@ -70,6 +82,8 @@ class LokiReport:
         self._tests_results = {}
         self._tests_results_raw = []
         self._loki_url = config.getoption('loki_url')
+        self._retry_attempts = config.getoption('loki_retry_attempts')
+        self._retry_interval = config.getoption('loki_retry_interval')
         if not self._loki_url.endswith('loki/api/v1/push'):
             self._loki_url = urljoin(self._loki_url, '/loki/api/v1/push')
 
@@ -178,15 +192,18 @@ class LokiReport:
             }
             payload['streams'].append(stream)
 
-        error_msg = None
-        try:
-            r = requests.post(self._loki_url, json=payload, auth=self._basic_auth)
-        except requests.RequestException as e:
-            error_msg = f"Could not send tests results to loki: {e}"
-        else:
-            if not r.ok:
-                error_msg = f"Failed to send tests resulsts to loki: {r.status_code}: {r.content}"
-        return error_msg
+        for i in range(self._retry_attempts):
+            try:
+                r = requests.post(self._loki_url, json=payload, auth=self._basic_auth)
+                r.raise_for_status()  # This will raise an HTTPError if the request returned a status error
+                return  # If no exception was raised, the request was successful, return from the function
+            except Exception as e:
+                if i < self._retry_attempts - 1:  # i is zero indexed
+                    time.sleep(self._retry_interval)  # wait a specified interval before next try
+                    continue
+                else:
+                    error_msg = f"Could not send tests results to loki after {self._retry_attempts} attempts: {e}"
+                    return error_msg
 
     def _make_metric_name(self, name):
         unsanitized_name = name
