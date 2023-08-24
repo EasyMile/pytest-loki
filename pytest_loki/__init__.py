@@ -95,7 +95,7 @@ class LokiReport:
             self._basic_auth = tuple(basicauth_creds.split(':'))
 
         # Collect env vars to use as labels
-        for var in config.getoption('loki_env_label'):
+        for var in (config.getoption('loki_env_label') or []):
             destvar = var
             if '=' in var:
                 var, destvar = var.split('=')
@@ -104,7 +104,7 @@ class LokiReport:
             self._extra_labels[destvar.lower()] = value
 
         self._env_vars_values = {}
-        for var in config.getoption('loki_env_value'):
+        for var in (config.getoption('loki_env_value') or []):
             self._env_vars_values[var.lower()] = os.environ[var]
 
     #

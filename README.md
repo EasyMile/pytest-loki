@@ -8,7 +8,7 @@ to a [Loki instance](https://github.com/grafana/loki).
 There is no pypi repo yet. You can however install it with pip directly from github:
 
 ```bash
-pip install git+https://github.com/EasyMile/pytest-loki.git@v0.1.1
+pip install git+https://github.com/EasyMile/pytest-loki.git@v0.1.3
 ```
 
 You can also install it manually using setup.py.

@@ -5,7 +5,7 @@ from setuptools import find_packages
 
 setup(
     name='pytest-loki',
-    version='0.1.2',
+    version='0.1.3',
     description='Report test metrics to a loki instance',
     author='Quentin Anglade',
     author_email='dev@easymile.com',
